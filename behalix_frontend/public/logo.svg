@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="top-hook" x1="0" y1="0" x2="48" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF4D6D"/>
+      <stop offset="100%" stop-color="#FF8C42"/>
+    </linearGradient>
+    <linearGradient id="bottom-hook" x1="0" y1="24" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF8C42"/>
+      <stop offset="100%" stop-color="#00C9A7"/>
+    </linearGradient>
+  </defs>
+  <!-- Top hook: curves down from left, hooks right -->
+  <path d="M8 8 C8 8, 8 24, 24 24 C32 24, 36 20, 36 14 C36 10, 33 8, 30 8 C27 8, 25 10, 25 14"
+        stroke="url(#top-hook)" stroke-width="5" stroke-linecap="round" fill="none"/>
+  <!-- Bottom hook: curves up from right, hooks left -->
+  <path d="M40 40 C40 40, 40 24, 24 24 C16 24, 12 28, 12 34 C12 38, 15 40, 18 40 C21 40, 23 38, 23 34"
+        stroke="url(#bottom-hook)" stroke-width="5" stroke-linecap="round" fill="none"/>
+</svg>
