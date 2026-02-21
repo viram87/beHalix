@@ -20,11 +20,52 @@ import CommunityDetailPage from '@/pages/CommunityDetailPage';
 import MyRsvpsPage from '@/pages/MyRsvpsPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 
+import { HelmetProvider } from 'react-helmet-async';
+import { SEO } from '@/components/SEO';
+
 function App() {
+  const globalJsonLd = [
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://be-halix.vercel.app",
+      "url": "https://be-halix.vercel.app",
+      "name": "BeHalix",
+      "description": "Create events, join others, and show up. Whatever you're into — find your people on BeHalix.",
+      "publisher": {
+        "@id": "https://be-halix.vercel.app"
+      },
+      "inLanguage": "en-US",
+    }),
+    JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": "https://be-halix.vercel.app",
+      "name": "BeHalix",
+      "url": "https://be-halix.vercel.app",
+      "logo": "https://be-halix.vercel.app/logo.svg",
+    })
+  ];
+
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
+    <HelmetProvider>
+      <SEO 
+        title="BeHalix — Where Interests Become Meetups"
+        description="Create events, join others, and show up. Whatever you're into — find your people on BeHalix."
+        keywords={[
+          "Community", "Events", "Meetups", "Networking", "Social", "Local Events", "Groups"
+        ]}
+        authorName="BeHalix Team"
+        creator="BeHalix"
+        publisher="BeHalix"
+        canonicalUrl="https://be-halix.vercel.app"
+        googleVerification="yDjsGMVfcx0Oj-SZUYlj_p1kfaRrq6hH3GR6Ov5Ad3I"
+        bingVerification="4DB1FA8D0D94AC428AE1D771607FCC4B"
+        jsonLd={globalJsonLd}
+      />
+      <ErrorBoundary>
+        <BrowserRouter>
+          <Routes>
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/verify" element={<VerifyPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -115,8 +156,9 @@ function App() {
         </Routes>
         <LoginModal />
         <Toaster position="top-center" richColors />
-      </BrowserRouter>
-    </ErrorBoundary>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </HelmetProvider>
   );
 }
 

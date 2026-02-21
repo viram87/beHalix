@@ -27,6 +27,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { Footer } from '@/components/Footer';
 import { SocialProofMarquee } from '@/components/SocialProofMarquee';
 import { Button } from '@/components/ui/button';
+import { SEO } from '@/components/SEO';
 
 function EventsPage() {
   const [events, setEvents] = useState<EventListItem[]>([]);
@@ -40,6 +41,7 @@ function EventsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     api
       .get<EventsResponse>('/events', { params: { page, limit } })
@@ -63,6 +65,7 @@ function EventsPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <SEO title="Events - BeHalix" description="Discover and join events near you. Whatever you're into — find your people on BeHalix." />
       <AppHeader />
 
       {/* ═══════════════════════════════════════════════════════

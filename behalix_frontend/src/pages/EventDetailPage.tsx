@@ -36,6 +36,7 @@ import { AttendeeProfileModal } from '@/components/AttendeeProfileModal';
 import { EventComments } from '@/components/EventComments';
 import { EventCard } from '@/components/EventCard';
 import { Button } from '@/components/ui/button';
+import { SEO } from '@/components/SEO';
 
 /* ── Helpers ─────────────────────────────────────────── */
 
@@ -429,11 +430,47 @@ export default function EventDetailPage() {
 
   const images = event.images ?? [];
   const goingCount = event.rsvpCount ?? 0;
+  
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+  const eventJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    "name": event.title,
+    "description": event.description ?? `Join ${event.title} on BeHalix!`,
+    "startDate": event.timestamp,
+    "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+    "eventStatus": "https://schema.org/EventScheduled",
+    "location": {
+      "@type": "Place",
+      "name": event.address?.line1 ?? 'TBD',
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": event.address?.line1 ?? '',
+        "addressLocality": event.address?.city ?? '',
+        "addressRegion": event.address?.state ?? '',
+        "postalCode": event.address?.zipCode ?? ''
+      }
+    },
+    "image": images.map(i => i.url),
+    "organizer": event.creator ? {
+      "@type": "Person",
+      "name": event.creator.displayName
+    } : undefined
+  };
 
   /* ── Render ──────────────────────────────────────── */
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEO 
+        title={`${event.title} - BeHalix`} 
+        description={event.description ? event.description.slice(0, 160) : `Join ${event.title} on BeHalix!`} 
+        image={images.length > 0 ? images[0].url : undefined}
+        type="article"
+        canonicalUrl={currentUrl}
+        jsonLd={JSON.stringify(eventJsonLd)}
+      />
       <AppHeader />
 
       <main className="flex-1">

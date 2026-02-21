@@ -11,6 +11,7 @@ import { PasswordInput } from '@/components/PasswordInput';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BeHalixLogo } from '@/components/BeHalixLogo';
+import { SEO } from '@/components/SEO';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email'),
@@ -64,6 +65,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-muted/30">
+      <SEO title="Log in - BeHalix" description="Log in to your BeHalix account." />
       <div className="mb-6">
         <BeHalixLogo size="lg" />
       </div>

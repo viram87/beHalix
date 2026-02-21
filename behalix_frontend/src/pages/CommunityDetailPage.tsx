@@ -8,6 +8,7 @@ import type { CommunityDetail } from '@/types/community';
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SEO } from '@/components/SEO';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -141,8 +142,29 @@ export default function CommunityDetailPage() {
   const isCreator = currentUserId && String(community.createdBy) === currentUserId;
   const canLeave = community.isMember && !isCreator;
 
+  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const communityJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": community.name,
+    "description": community.description ?? `Join the ${community.name} community on BeHalix!`,
+    "url": currentUrl,
+    "interactionStatistic": {
+      "@type": "InteractionCounter",
+      "interactionType": "https://schema.org/FollowAction",
+      "userInteractionCount": community.memberCount
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SEO 
+        title={`${community.name} - BeHalix`} 
+        description={community.description ? community.description.slice(0, 160) : `Join the ${community.name} community on BeHalix!`}
+        type="article"
+        canonicalUrl={currentUrl}
+        jsonLd={JSON.stringify(communityJsonLd)}
+      />
       <AppHeader />
       <main className="container flex-1 py-8 max-w-7xl mx-auto px-4 sm:px-6">
         <Link

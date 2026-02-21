@@ -33,6 +33,7 @@ export default function MyRsvpsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     api
       .get<{ rsvps: UserRsvpItem[]; pagination: { page: number; totalPages: number; total: number } }>(

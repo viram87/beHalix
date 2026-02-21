@@ -6,6 +6,7 @@ import type { CommunityListItem } from '@/types/community';
 import { AppHeader } from '@/components/AppHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SEO } from '@/components/SEO';
 
 export default function DiscoverCommunitiesPage() {
   const [communities, setCommunities] = useState<CommunityListItem[]>([]);
@@ -21,6 +22,7 @@ export default function DiscoverCommunitiesPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-muted/30">
+      <SEO title="Discover Communities - BeHalix" description="Find and join communities that match your interests on BeHalix." />
       <AppHeader />
       <main className="container flex-1 py-8">
         <div className="mb-8">
