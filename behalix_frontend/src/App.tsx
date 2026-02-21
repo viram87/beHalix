@@ -43,7 +43,7 @@ function App() {
       "@id": "https://be-halix.vercel.app",
       "name": "BeHalix",
       "url": "https://be-halix.vercel.app",
-      "logo": "https://be-halix.vercel.app/logo.svg",
+      "logo": "https://be-halix.vercel.app/logo.svg"
     })
   ];
 
