@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
-import { createEvent, getEvents, getEvent, deleteEvent, saveEvent, unsaveEvent } from '../controllers/event.controller';
+import { createEvent, getEvents, getEvent, deleteEvent, saveEvent, unsaveEvent, updateEvent } from '../controllers/event.controller';
 import { authenticate, optionalAuthenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { upload } from '../middleware/upload.middleware';
@@ -174,6 +174,20 @@ router.get('/', optionalAuthenticate, getEvents);
  *         description: Unauthorized
  */
 router.get('/:id', optionalAuthenticate, getEvent);
+
+router.patch(
+  '/:id',
+  authenticate,
+  upload.array('images', 5),
+  [
+    body('title').optional().isLength({ min: 1, max: 200 }).withMessage('Title max 200 chars'),
+    body('description').optional().isLength({ max: 2000 }).withMessage('Desc max 2000 chars'),
+    body('timestamp').optional().isISO8601().withMessage('Invalid timestamp'),
+    body('isWomenOnly').optional().isBoolean().withMessage('isWomenOnly must be boolean'),
+  ],
+  validate,
+  updateEvent
+);
 
 router.post('/:id/save', authenticate, saveEvent);
 router.delete('/:id/save', authenticate, unsaveEvent);

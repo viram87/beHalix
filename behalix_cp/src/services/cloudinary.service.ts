@@ -30,3 +30,15 @@ export const uploadImage = async (fileBuffer: Buffer): Promise<any> => {
     Readable.from(fileBuffer).pipe(uploadStream);
   });
 };
+
+export const deleteImage = async (publicId: string): Promise<void> => {
+  if (!publicId) return;
+  if (process.env.NODE_ENV === 'test') return;
+
+  try {
+    await cloudinary.uploader.destroy(publicId, { invalidate: true });
+  } catch (error) {
+    console.error('Cloudinary delete error:', error);
+    throw new Error('Image delete failed');
+  }
+};

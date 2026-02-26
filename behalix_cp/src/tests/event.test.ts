@@ -143,4 +143,94 @@ describe('Event Endpoints', () => {
              expect(titles).not.toContain('Women Tech Talk');
         });
     });
+
+    describe('PATCH /events/:id', () => {
+        it('should allow creator to update event fields', async () => {
+            const token = await generateTestToken('female');
+            const createRes = await supertest(app)
+                .post('/events')
+                .set('Authorization', `Bearer ${token}`)
+                .field('title', 'Original Title')
+                .field('description', 'Original description')
+                .field('timestamp', new Date(Date.now() + 86400000).toISOString())
+                .field('isWomenOnly', 'false')
+                .field('address', JSON.stringify({
+                    line1: '123 Main St',
+                    city: 'Tech City',
+                    state: 'CA',
+                    zipCode: '90210'
+                }));
+
+            const eventId = createRes.body._id;
+            const patchRes = await supertest(app)
+                .patch(`/events/${eventId}`)
+                .set('Authorization', `Bearer ${token}`)
+                .field('title', 'Updated Title')
+                .field('description', 'Updated description')
+                .field('assemblyTime', '6:45 PM')
+                .field('tags', JSON.stringify(['tech', 'networking']));
+
+            expect(patchRes.status).toBe(200);
+            expect(patchRes.body.event.title).toBe('Updated Title');
+            expect(patchRes.body.event.description).toBe('Updated description');
+            expect(patchRes.body.event.assemblyTime).toBe('6:45 PM');
+            expect(patchRes.body.event.tags).toEqual(['tech', 'networking']);
+        });
+
+        it('should reject updates from non-creator', async () => {
+            const creatorToken = await generateTestToken('female');
+            const otherToken = await generateTestToken('female');
+
+            const createRes = await supertest(app)
+                .post('/events')
+                .set('Authorization', `Bearer ${creatorToken}`)
+                .field('title', 'Creator Event')
+                .field('timestamp', new Date(Date.now() + 86400000).toISOString())
+                .field('isWomenOnly', 'false')
+                .field('address', JSON.stringify({
+                    line1: '123 Main St',
+                    city: 'Tech City',
+                    state: 'CA',
+                    zipCode: '90210'
+                }));
+
+            const patchRes = await supertest(app)
+                .patch(`/events/${createRes.body._id}`)
+                .set('Authorization', `Bearer ${otherToken}`)
+                .field('title', 'Should Not Update');
+
+            expect(patchRes.status).toBe(403);
+            expect(patchRes.body.code).toBe('FORBIDDEN');
+        });
+
+        it('should support adding and removing images in a single update', async () => {
+            const token = await generateTestToken('female');
+            const createRes = await supertest(app)
+                .post('/events')
+                .set('Authorization', `Bearer ${token}`)
+                .field('title', 'Image Event')
+                .field('timestamp', new Date(Date.now() + 86400000).toISOString())
+                .field('isWomenOnly', 'false')
+                .field('address', JSON.stringify({
+                    line1: '123 Main St',
+                    city: 'Tech City',
+                    state: 'CA',
+                    zipCode: '90210'
+                }))
+                .attach('images', Buffer.from('fake-image-1'), 'one.jpg');
+
+            expect(createRes.status).toBe(201);
+            expect(createRes.body.images).toHaveLength(1);
+
+            const existingPublicId = createRes.body.images[0].publicId;
+            const patchRes = await supertest(app)
+                .patch(`/events/${createRes.body._id}`)
+                .set('Authorization', `Bearer ${token}`)
+                .field('removeImagePublicIds', JSON.stringify([existingPublicId]))
+                .attach('images', Buffer.from('fake-image-2'), 'two.jpg');
+
+            expect(patchRes.status).toBe(200);
+            expect(patchRes.body.event.images).toHaveLength(1);
+        });
+    });
 });

@@ -5,7 +5,7 @@ import Event from '../models/Event';
 import User from '../models/User';
 import UserDetails from '../models/UserDetails';
 import Community from '../models/Community';
-import { uploadImage } from '../services/cloudinary.service';
+import { uploadImage, deleteImage } from '../services/cloudinary.service';
 import RSVP from '../models/RSVP';
 import SavedEvent from '../models/SavedEvent';
 
@@ -328,6 +328,182 @@ export const saveEvent = async (req: AuthRequest, res: Response) => {
     res.status(201).json({ message: 'Event saved', saved: true });
   } catch (error) {
     console.error('Save event error:', error);
+    res.status(500).json({ error: 'Internal Server Error', code: 'INTERNAL_SERVER_ERROR' });
+  }
+};
+
+export const updateEvent = async (req: AuthRequest, res: Response) => {
+  try {
+    const eventId = req.params.id;
+    const event = await Event.findById(eventId);
+    if (!event) {
+      return res.status(404).json({ error: 'Event not found', code: 'EVENT_NOT_FOUND' });
+    }
+    if (String(event.createdBy) !== req.user.id) {
+      return res.status(403).json({ error: 'Forbidden', code: 'FORBIDDEN' });
+    }
+
+    const files = req.files as Express.Multer.File[] | undefined;
+    const {
+      title,
+      description,
+      timestamp,
+      isWomenOnly,
+      address,
+      tags,
+      assemblyTime,
+      removeImagePublicIds,
+    } = req.body;
+
+    if (title !== undefined) {
+      const nextTitle = String(title).trim();
+      if (!nextTitle) {
+        return res.status(400).json({ error: 'Title is required', code: 'VALIDATION_ERROR' });
+      }
+      event.title = nextTitle.slice(0, 200);
+    }
+
+    if (description !== undefined) {
+      event.description = String(description).trim().slice(0, 2000);
+    }
+
+    if (timestamp !== undefined) {
+      const nextTs = timestamp instanceof Date ? timestamp : new Date(String(timestamp));
+      if (Number.isNaN(nextTs.getTime())) {
+        return res.status(400).json({ error: 'Invalid timestamp', code: 'VALIDATION_ERROR' });
+      }
+      const previousTs = new Date(event.timestamp);
+      const isUnchanged = nextTs.getTime() === previousTs.getTime();
+      if (nextTs <= new Date() && !isUnchanged) {
+        return res.status(400).json({ error: 'Timestamp must be in future', code: 'EVENT_PAST' });
+      }
+      event.timestamp = nextTs;
+    }
+
+    if (isWomenOnly !== undefined) {
+      const requestedIsWomenOnly = isWomenOnly === 'true' || isWomenOnly === true;
+      const userDetails = await UserDetails.findOne({ userId: req.user.id });
+      const isMale = userDetails?.gender === 'male';
+      event.isWomenOnly = isMale ? false : requestedIsWomenOnly;
+    }
+
+    if (address !== undefined) {
+      let parsedAddress: any = address;
+      if (typeof address === 'string') {
+        try {
+          parsedAddress = JSON.parse(address);
+        } catch (e) {
+          return res.status(400).json({ error: 'Invalid address format', code: 'INVALID_ADDRESS' });
+        }
+      }
+
+      if (
+        !parsedAddress ||
+        !parsedAddress.line1 ||
+        !parsedAddress.city ||
+        !parsedAddress.state ||
+        !parsedAddress.zipCode
+      ) {
+        return res.status(400).json({
+          error: 'Address must include line1, city, state, and zipCode',
+          code: 'INVALID_ADDRESS',
+        });
+      }
+
+      event.address = {
+        line1: String(parsedAddress.line1).trim().slice(0, 100),
+        line2: parsedAddress.line2 ? String(parsedAddress.line2).trim().slice(0, 100) : undefined,
+        city: String(parsedAddress.city).trim().slice(0, 50),
+        state: String(parsedAddress.state).trim().slice(0, 50),
+        zipCode: String(parsedAddress.zipCode).trim().slice(0, 10),
+      } as any;
+    }
+
+    if (tags !== undefined) {
+      const parsedTags = Array.isArray(tags)
+        ? tags
+        : typeof tags === 'string'
+          ? (() => {
+              try {
+                const p = JSON.parse(tags);
+                return Array.isArray(p) ? p : [];
+              } catch {
+                return [];
+              }
+            })()
+          : [];
+      const cleaned = parsedTags
+        .map((t: unknown) => String(t).trim())
+        .filter((t: string) => !!t)
+        .slice(0, 10);
+      event.tags = cleaned;
+    }
+
+    if (assemblyTime !== undefined) {
+      const cleaned = String(assemblyTime).trim();
+      event.assemblyTime = cleaned ? cleaned.slice(0, 50) : undefined;
+    }
+
+    let removeIds: string[] = [];
+    if (removeImagePublicIds !== undefined) {
+      removeIds = Array.isArray(removeImagePublicIds)
+        ? removeImagePublicIds.map((id) => String(id))
+        : typeof removeImagePublicIds === 'string'
+          ? (() => {
+              try {
+                const p = JSON.parse(removeImagePublicIds);
+                return Array.isArray(p) ? p.map((id) => String(id)) : [];
+              } catch {
+                return [];
+              }
+            })()
+          : [];
+    }
+
+    const removeSet = new Set(removeIds.filter((id) => !!id));
+    const keptImages = (event.images ?? []).filter((img: any) => !removeSet.has(String(img.publicId)));
+    const removedImages = (event.images ?? []).filter((img: any) => removeSet.has(String(img.publicId)));
+
+    const newUploadCount = files?.length ?? 0;
+    if (keptImages.length + newUploadCount > 5) {
+      return res.status(400).json({ error: 'Max 5 images allowed', code: 'VALIDATION_ERROR' });
+    }
+
+    for (const img of removedImages) {
+      if (img?.publicId) {
+        await deleteImage(String(img.publicId));
+      }
+    }
+
+    const uploadedImages: { url: string; publicId: string; uploadedAt: Date }[] = [];
+    if (files && files.length > 0) {
+      for (const file of files) {
+        if (!file.buffer || !Buffer.isBuffer(file.buffer)) {
+          return res.status(400).json({
+            error: 'Invalid file upload. Please upload image files.',
+            code: 'INVALID_FILE',
+          });
+        }
+        const result = await uploadImage(file.buffer);
+        uploadedImages.push({
+          url: result.url,
+          publicId: result.publicId,
+          uploadedAt: result.uploadedAt instanceof Date ? result.uploadedAt : new Date(result.uploadedAt),
+        });
+      }
+    }
+
+    event.images = [...keptImages, ...uploadedImages] as any;
+    event.updatedAt = new Date();
+    await event.save();
+
+    res.status(200).json({ message: 'Event updated', event });
+  } catch (error) {
+    console.error('Update event error:', error);
+    const message = (error as Error).message;
+    if (message.includes('Cloudinary') || message.includes('Image upload') || message.includes('Image delete')) {
+      return res.status(502).json({ error: message, code: 'IMAGE_UPLOAD_FAILED' });
+    }
     res.status(500).json({ error: 'Internal Server Error', code: 'INTERNAL_SERVER_ERROR' });
   }
 };
